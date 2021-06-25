@@ -13,6 +13,7 @@ import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 import { expectToThrowCKEditorError } from '@ckeditor/ckeditor5-utils/tests/_utils/utils';
 import { getData as getModelData } from '@ckeditor/ckeditor5-engine/src/dev-utils/model';
 import { getModelDataWithAttributes } from './_utils/utils';
+import { addBackgroundRules } from '@ckeditor/ckeditor5-engine/src/view/styles/background';
 
 import GeneralHtmlSupport from '../src/generalhtmlsupport';
 
@@ -316,6 +317,35 @@ describe( 'DataFilter', () => {
 			expect( editor.getData() ).to.equal( '<p><input><input></p>' );
 		} );
 
+		it( 'should apply attributes to correct editing element', () => {
+			dataFilter.allowElement( 'input' );
+			dataFilter.allowAttributes( { name: 'input', attributes: 'type' } );
+
+			editor.setData( '<p><input type="number"/></p>' );
+
+			const input = editor.editing.view.document.getRoot()
+				.getChild( 0 ) // <p>
+				.getChild( 0 ) // <span>
+				.getChild( 0 ); // <input>
+
+			expect( input.getAttribute( 'type' ) ).to.equal( 'number' );
+		} );
+
+		it( 'should consume htmlAttributes attribute (editing downcast)', () => {
+			const spy = sinon.spy();
+
+			editor.conversion.for( 'editingDowncast' ).add( dispatcher => {
+				dispatcher.on( 'attribute:htmlAttributes:htmlInput', spy );
+			} );
+
+			dataFilter.allowElement( 'input' );
+			dataFilter.allowAttributes( { name: 'input', attributes: 'type' } );
+
+			editor.setData( '<p><input type="number"/></p>' );
+
+			expect( spy.called ).to.be.false;
+		} );
+
 		function getObjectModelDataWithAttributes( model, options ) {
 			options.excludeAttributes = [ 'htmlContent' ];
 			return getModelDataWithAttributes( model, options );
@@ -611,7 +641,7 @@ describe( 'DataFilter', () => {
 				model: 'htmlXyz',
 				allowChildren: 'not-exists',
 				schema: {
-					inheritAllFrom: '$htmlBlock'
+					inheritAllFrom: '$htmlSection'
 				}
 			} );
 
@@ -1274,6 +1304,17 @@ describe( 'DataFilter', () => {
 		expectToThrowCKEditorError( () => {
 			dataFilter.allowElement( 'xyz' );
 		}, /data-filter-invalid-definition/, null, definition );
+	} );
+
+	it( 'should handle expanded styles by matcher', () => {
+		editor.data.addStyleProcessorRules( addBackgroundRules );
+
+		dataFilter.allowElement( 'p' );
+		dataFilter.allowAttributes( { name: 'p', styles: true } );
+
+		editor.setData( '<p style="background:red;">foobar</p>' );
+
+		expect( editor.getData() ).to.equal( '<p style="background-color:red;">foobar</p>' );
 	} );
 
 	describe( 'loadAllowedConfig', () => {

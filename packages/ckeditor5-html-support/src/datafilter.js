@@ -345,17 +345,18 @@ export default class DataFilter extends Plugin {
 		} );
 		conversion.for( 'upcast' ).add( viewToModelBlockAttributeConverter( definition, this ) );
 
+		conversion.for( 'editingDowncast' ).elementToElement( {
+			model: modelName,
+			view: toObjectWidgetConverter( editor, definition )
+		} );
+
 		conversion.for( 'dataDowncast' ).elementToElement( {
 			model: modelName,
 			view: ( modelElement, { writer } ) => {
 				return createObjectView( viewName, modelElement, writer );
 			}
 		} );
-		conversion.for( 'editingDowncast' ).elementToElement( {
-			model: modelName,
-			view: toObjectWidgetConverter( editor, definition )
-		} );
-		conversion.for( 'downcast' ).add( modelToViewBlockAttributeConverter( definition ) );
+		conversion.for( 'dataDowncast' ).add( modelToViewBlockAttributeConverter( definition ) );
 	}
 
 	/**
@@ -556,7 +557,10 @@ function iterableToObject( iterable, getValue ) {
 	const attributesObject = {};
 
 	for ( const prop of iterable ) {
-		attributesObject[ prop ] = getValue( prop );
+		const value = getValue( prop );
+		if ( value !== undefined ) {
+			attributesObject[ prop ] = getValue( prop );
+		}
 	}
 
 	return attributesObject;
