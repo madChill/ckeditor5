@@ -106,7 +106,9 @@
 	<script src="../build/ckeditor.js"></script>
 	<script>ClassicEditor
 			.create( document.querySelector( '.editor' ), {
-				
+				ckfinder: {
+						uploadUrl: 'http://10.17.75.190:3012/api/v1/users/feedbacks',
+					},
 				toolbar: {
 					items: [
 						'heading',
